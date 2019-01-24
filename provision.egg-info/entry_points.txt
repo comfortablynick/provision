@@ -1,0 +1,3 @@
+[console_scripts]
+provision = provision.__main__:main
+
