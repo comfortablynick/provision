@@ -1,10 +1,8 @@
 """Interact with apt-get on Debian distros."""
-import argparse
 import logging
 import os
 import shutil
 
-from provision.arguments import ColoredArgParser
 from provision.utils import run
 
 LOG = logging.getLogger(__name__)
@@ -42,7 +40,10 @@ def install(args=None, pkgs: list = []) -> int:
     if not shutil.which("apt-get"):
         LOG.error("Apt not installed on this system")
         return 1
-    packages = pkgs + args.packages
+    try:
+        packages = pkgs + args.packages
+    except AttributeError:
+        packages = pkgs
     if not len(packages):
         LOG.info("No pkgs supplied; getting apt pkgs from disk")
         pkg_file = "~/.config/shell/provision/apt_package"
@@ -67,22 +68,5 @@ def update(args) -> int:
     _update_cache()
     _upgrade(args)
     install(args)
-    run("sudo apt autoremove", check=True)
-    return run("sudo apt purge", capture_output=True).returncode
-
-
-def main(cli_args):
-    LOG.debug(cli_args)
-    parser = ColoredArgParser(
-        prog="provision install",
-        description="Install software",
-        epilog="use -h/--help for any command to see additional options",
-    )
-    parser.add_argument(
-        "command",
-        help="app to build and install from source",
-        choices=["ctags", "fish", "mosh", "nnn", "tmux", "todo"],
-        nargs="+",
-    )
-    args = parser.parse_known_args(cli_args)
-    LOG.debug(args)
+    run("sudo apt autoremove -y", check=True)
+    return run("sudo apt purge -y", capture_output=True).returncode

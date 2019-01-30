@@ -1,23 +1,53 @@
+"""Command-line interface for provision."""
 import logging
 import sys
 
-from provision import apt, arguments
-
-log_fmt = "%(levelname)s:%(funcName)s: %(message)s"
-logging.basicConfig(format=log_fmt)
-LOG = logging.getLogger(__name__)
+import coloredlogs
+from provision.args import build_parser
 
 
-def main():
-    """Command-line entry point."""
-    # Get arguments
+def get_logger(log_name: str, log_level: int) -> logging.Logger:  # {{{1
+    """Define defaults for color logger.
+
+    Supported styles and colors can be found by running the
+    ``humanfriendly --demo`` command.
+    """
+    log_fmt = "%(levelname)s:%(name)s:%(funcName)s: %(message)s"
+    field_styles = dict(
+        asctime=dict(color="green"),
+        levelname=dict(color=245),
+        programname=dict(color="cyan"),
+        funcName=dict(color=172),
+        name=dict(color="blue", bright=True),
+    )
+    level_styles = dict(
+        debug=dict(color="green"),
+        info=dict(color="yellow"),
+        warning=dict(color="magenta"),
+        error=dict(color="red"),
+        critical=dict(color="red", bold=True),
+    )
+    log = logging.getLogger(log_name)
+    coloredlogs.install(
+        level=log_level,
+        logger=log,
+        fmt=log_fmt,
+        level_styles=level_styles,
+        field_styles=field_styles,
+    )
+    return log
+
+
+# Entry point
+def cli() -> int:
+    """Admin script for provisioning software/settings on unix machines."""
     try:
         sys.argv[1]
         cli_args = sys.argv[1:]
     except IndexError:
-        cli_args = ["-dd", "--help"]
+        cli_args = ["--help"]
     finally:
-        args, extra = arguments.process_args(cli_args)
+        args, extra = build_parser().parse_known_args(cli_args)
 
     if args.debug == 1:
         log_level = logging.INFO
@@ -26,19 +56,15 @@ def main():
     else:
         log_level = logging.WARNING
 
-    try:
-        import coloredlogs
-    except ModuleNotFoundError:
-        pass
-    else:
-        coloredlogs.install(logger=LOG, fmt=log_fmt, level=log_level)
-
+    LOG = get_logger(log_name=__name__, log_level=log_level)
     LOG.info("Logging level: %s", LOG.getEffectiveLevel())
     LOG.info("Argument input: %s", repr(cli_args))
     LOG.info("Argparse output: %s", repr(args))
 
-    if len(extra):
-        LOG.info("Argparse extra args: %s", repr(extra))
-
-    if args.command == "apt":
-        apt.main(cli_args)
+    try:
+        args.func(args)
+    except AttributeError as e:
+        LOG.error(
+            "No function is associated with command input: %r\nError text:%s", args, e
+        )
+    return 0

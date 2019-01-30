@@ -4,5 +4,5 @@ setup(
     name="provision",
     version="0.0.1",
     packages=["provision"],
-    entry_points={"console_scripts": ["provision = provision.__main__:main"]},
+    entry_points={"console_scripts": ["provision = provision.cli:cli"]},
 )
