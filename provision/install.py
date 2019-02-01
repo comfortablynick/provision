@@ -3,11 +3,11 @@ import logging
 import shutil
 from typing import List, NoReturn
 
-from provision import apt
+from provision import apt, logger
 from provision.git import git_latest_tag
-from provision.utils import chdir, rmtree, run
+from provision.utils import chdir, mkdir_p, rmtree, run
 
-LOG = logging.getLogger(__name__)
+LOG = logger.get_logger(__name__, logging.DEBUG)
 
 
 def install(args) -> int:
@@ -183,6 +183,44 @@ def install_mosh(args) -> int:
         run("sudo make install")
     LOG.debug("Cleaning up temp directories...")
     rmtree(mosh_tmp, ignore_errors=True)
+    return 0
+
+
+def install_neovim(args) -> int:
+    """Download, build, and install Neovim."""
+    prog_name = "nvim"
+    if shutil.which(prog_name) and not args.force:
+        LOG.warning("%s already exists. Skipping install!", prog_name)
+        return 1
+    pkgs = [
+        "gperf",
+        "libluajit-5.1-dev",
+        "libunibilium-dev",
+        "libmsgpack-dev",
+        "libtermkey-dev",
+        "libvterm-dev",
+        "libjemalloc-dev",
+    ]
+    apt.install(args, pkgs=pkgs)
+    tmp_dir = f"/tmp/{prog_name}"
+    rmtree(tmp_dir, ignore_errors=True)
+    run(f"git clone https://github.com/neovim/neovim.git {tmp_dir}")
+
+    LOG.info("Building dependencies...")
+    deps_dir = f"{tmp_dir}/.deps"
+    mkdir_p(deps_dir)
+    with chdir(deps_dir):
+        cmake = run("cmake ../third-party", capture_output=True)
+        if cmake.returncode == 0:
+            run("make")
+    LOG.info("Building %s...", prog_name)
+    with chdir(tmp_dir):
+        run("make distclean")
+        run("make CMAKE_BUILD_TYPE=RelWithDebInfo")
+        LOG.info("Installing %s...", prog_name)
+        run("sudo make install")
+    LOG.debug("Cleaning up temp directories...")
+    rmtree(tmp_dir, ignore_errors=True)
     return 0
 
 
