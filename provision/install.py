@@ -1,6 +1,7 @@
 """Download, (build), and install programs."""
 import logging
 import shutil
+import socket
 from typing import List, NoReturn
 
 from provision import apt, logger
@@ -217,6 +218,93 @@ def install_neovim(args) -> int:
     with chdir(tmp_dir):
         run("make distclean")
         run("make CMAKE_BUILD_TYPE=RelWithDebInfo")
+        LOG.info("Installing %s...", prog_name)
+        run("sudo make install")
+    LOG.debug("Cleaning up temp directories...")
+    rmtree(tmp_dir, ignore_errors=True)
+    return 0
+
+
+"""
+case "$HOSTNAME" in
+io)
+    py3_dir="/usr/local/lib/python3.7/config-3.7m-x86_64-linux-gnu"
+    ;;
+joppa)
+    py3_dir=$(python3.5-config --configdir)
+    ;;
+titan)
+    py3_dir="/home/pi/.pyenv/versions/3.7.2/lib/python3.7/config-3.7m-arm-linux-gnueabihf"
+    ;;
+jupiter)
+    py3_dir="/home/nick/.pyenv/versions/3.7.2/lib/python3.7/config-3.7m-x86_64-linux-gnu"
+    ;;
+*)
+    echo "Need to set python3 config dir for this host." >&2 &&
+        exit 1
+    ;;
+esac
+"""
+
+
+def install_vim(args) -> int:
+    """Download, build, and install Vim."""
+    prog_name = "vim"
+    if shutil.which(prog_name) and not args.force:
+        LOG.warning("%s already exists. Skipping install!", prog_name)
+        return 1
+    pkgs = [
+        "libncurses5-dev",
+        "libgnome2-dev",
+        "libgnomeui-dev",
+        "libgtk2.0-dev",
+        "libatk1.0-dev",
+        "libbonoboui2-dev",
+        "libcairo2-dev",
+        "libx11-dev",
+        "libxpm-dev",
+        "libxt-dev",
+        "python-dev",
+        "python3-dev",
+        "lua5.1",
+        "liblua5.1-dev",
+        "libperl-dev",
+    ]
+    apt.install(args, pkgs=pkgs)
+    tmp_dir = f"/tmp/{prog_name}"
+    rmtree(tmp_dir, ignore_errors=True)
+    run(f"git clone https://github.com/vim/vim.git {tmp_dir}")
+
+    LOG.info("Building %s...", prog_name)
+    py_dirs = dict(
+        io="/usr/local/lib/python3.7/config-3.7m-x86_64-linux-gnu",
+        titan="/home/pi/.pyenv/versions/3.7.2/lib/python3.7/config-3.7m-arm-linux-gnueabihf",
+        jupiter="/home/nick/.pyenv/versions/3.7.2/lib/python3.7/config-3.7m-x86_64-linux-gnu",
+    )
+    try:
+        py_dir = py_dirs[socket.gethostname()]
+    except KeyError:
+        LOG.error("Need python3 directory for this host!")
+        return 1
+    LOG.debug("Python directory for this host: %s", py_dir)
+
+    with chdir(tmp_dir):
+        LOG.info("Configuring %s...", prog_name)
+        run(
+            [
+                "./configure",
+                "--with-features=huge",
+                "--enable-multibyte",
+                "--enable-rubyinterp=yes",
+                "--enable-python3interp=yes",
+                "--with-python3-config-dir={}".format(py_dir),
+                "--enable-perlinterp=yes",
+                "--enable-luainterp=yes",
+                "--enable-cscope",
+                "--prefix=/usr/local",
+            ]
+        )
+        run("make VIMRUNTIMEDIR=/usr/local/share/vim/vim81")
         LOG.info("Installing %s...", prog_name)
         run("sudo make install")
     LOG.debug("Cleaning up temp directories...")

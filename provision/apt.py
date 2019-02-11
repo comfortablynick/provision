@@ -24,12 +24,14 @@ def _list_upgradable(args) -> int:
     LOG.debug("Apt cache updated: %s", CACHE_UPDATED)
     _update_cache()
     cmd = run("apt list --upgradable", capture_output=True)
+    print(cmd.stdout)
     return cmd.returncode
 
 
 def _upgrade(args=None) -> int:
     _update_cache()
     cmd = run("sudo apt full-upgrade -y", capture_output=True)
+    print(cmd.stdout)
     return cmd.returncode
 
 
@@ -66,7 +68,11 @@ def install(args=None, pkgs: list = []) -> int:
 def update(args) -> int:
     """Install/update apt packages, and purge old cached files."""
     _update_cache()
+    print("Listing upgradable packages...")
+    _list_upgradable
+    print("Upgrading packages...")
     _upgrade(args)
-    install(args)
+    #  install(args)
+    print("Cleaning up...")
     run("sudo apt autoremove -y", check=True)
     return run("sudo apt purge -y", capture_output=True).returncode
