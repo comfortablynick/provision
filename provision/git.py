@@ -1,9 +1,10 @@
+"""Handle interactions with github."""
 import logging
 import os
 import shutil
 
+import requests
 from github import Github
-
 from provision.utils import chdir, run
 
 LOG = logging.getLogger(__name__)
@@ -96,9 +97,11 @@ def github_latest_release(args) -> int:
         else:
             break
     print(f"You chose to download {file.name}")
-    dl = run(f"wget {file.browser_download_url}", capture_output=True)
-    if dl.returncode != 0:
-        LOG.error("Download failed! %s", dl.stderr)
-    else:
-        print("File downloaded to current folder.")
-    return dl.returncode
+    r = requests.get(file.browser_download_url, stream=True)
+    LOG.debug("Request response: %s", r.status_code)
+    dest_path = os.path.join(os.path.expanduser(args.dest), file.name)
+    print(f"Downloading to {dest_path}...")
+    with open(dest_path, "wb") as f:
+        for chunk in r.iter_content(chunk_size=128):
+            f.write(chunk)
+    return 0

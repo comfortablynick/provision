@@ -1,5 +1,6 @@
 """Build argument parser for module."""
 import argparse
+import os
 import sys
 from typing import NoReturn
 
@@ -167,6 +168,13 @@ def build_parser() -> argparse.ArgumentParser:
         add_help=False,
     )
     parser_github_release.add_argument("repo", type=str, help="github repo name")
+    parser_github_release.add_argument(
+        "dest",
+        type=str,
+        help="destination directory for file (defaults to user home)",
+        default=os.environ.get("HOME"),
+        nargs="?",
+    )
     parser_github_release.set_defaults(func=git.github_latest_release)
 
     return parser
