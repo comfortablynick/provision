@@ -75,4 +75,5 @@ def update(args) -> int:
     #  install(args)
     print("Cleaning up...")
     run("sudo apt autoremove -y", check=True)
-    return run("sudo apt purge -y", capture_output=True).returncode
+    run("sudo apt purge -y", check=True)
+    return 0
