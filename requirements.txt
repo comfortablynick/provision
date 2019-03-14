@@ -1,0 +1,12 @@
+certifi==2019.3.9
+chardet==3.0.4
+coloredlogs==10.0
+Deprecated==1.2.5
+humanfriendly==4.18
+idna==2.8
+-e git+git@github.com:comfortablynick/provision.git@64032bcd0e9a834739c7f2a0149844bb41a7b7a2#egg=provision
+PyGithub==1.43.5
+PyJWT==1.7.1
+requests==2.21.0
+urllib3==1.24.1
+wrapt==1.11.1

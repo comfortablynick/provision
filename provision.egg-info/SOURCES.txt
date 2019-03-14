@@ -1,9 +1,7 @@
 setup.py
 provision/__init__.py
-provision/__main__.py
 provision/apt.py
-provision/arg.py
-provision/arg2.py
+provision/args.py
 provision/cli.py
 provision/git.py
 provision/install.py
