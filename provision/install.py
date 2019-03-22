@@ -68,6 +68,8 @@ def install_lpass(args) -> int:
         "libssl1.1",
         "pkg-config",
         "ca-certificates",
+        "asciidoc",
+        "xsltproc",
         "xclip",
     ]
     apt.install(args, pkgs=pkgs)
@@ -79,6 +81,7 @@ def install_lpass(args) -> int:
         run("make")
         LOG.debug("Installing %s...", prog_name)
         run("sudo make install")
+        run("sudo make install-doc")
     LOG.debug("Cleaning up temp directories...")
     rmtree(tmp_dir, ignore_errors=True)
     return 0
@@ -294,6 +297,7 @@ def install_vim(args) -> int:
             [
                 "./configure",
                 "--with-features=huge",
+                "--enable-gui=no",
                 "--enable-multibyte",
                 "--enable-rubyinterp=yes",
                 "--enable-python3interp=yes",
