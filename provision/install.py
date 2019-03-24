@@ -377,6 +377,25 @@ def install_vcprompt(args) -> int:
     return install.returncode
 
 
+def install_htop(args) -> int:
+    """Download and install htop process viewer."""
+    if shutil.which("htop") and not args.force:
+        LOG.warning("htop already exists. Skipping install!")
+        return 1
+
+    tmp = "/tmp/htop"
+    rmtree(tmp, ignore_errors=True)
+    run(f"git clone https://github.com/hishamhm/htop.git {tmp}")
+
+    with chdir(tmp):
+        run("./autogen.sh")
+        run("./configure")
+        run("make")
+        install = run("sudo make install")
+    rmtree(tmp)
+    return install.returncode
+
+
 def command_names() -> List[str]:
     """Return globals of this script."""
     return [d.split("_")[1] for d in globals().keys() if d.startswith("install_")]
